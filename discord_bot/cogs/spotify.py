@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 from pathlib import Path
 
 import discord
@@ -7,6 +8,7 @@ from discord.ext import commands
 from discord.ext import tasks
 import requests
 
+from ..environment import DATA_DIR
 from ..log_setup import logger
 from ..utils import utils as ut
 
@@ -20,6 +22,8 @@ AIT_MUSIC_LIST = "https://raw.githubusercontent.com/xoundbyte/soul-over-ai/refs/
 SOUL_OVER_AI_ARTIST_BASE_URL = "https://souloverai.com/artist/{}"
 
 ai_music_dict_listT = list[dict[str, str | float | dt.datetime]]
+
+artist_stats_dictT = dict[str, dict[str, str | int]]
 
 DISCLAIMER = "Please note that soul over ai is community driven. It is no proof for the artist beeing AI. They're just compiling evidence."
 
@@ -37,24 +41,46 @@ class SpotifyWatcher(commands.Cog):
 
         self.update_ai_music_catalogue()
 
-        self.reported_ai_incidents = self.load_count()
+        self.reported_ai_incidents, self.artist_stats = self.load()
 
         self.fetch_ai_music_list_task.start()
         self.watch_members_task.start()
 
         self.last_user_sent_account: dict[discord.Member, str] = {}
 
-    def store_count(self) -> None:
-        """Store the reported AI incidents count to disk."""
-        data_path = Path("data/incident_count.txt")
-        data_path.write_text(str(self.reported_ai_incidents))
+    def load(self) -> tuple[int, artist_stats_dictT]:
+        """Load both incident count and artist statistics from disk."""
+        # Load incident count
+        count_path = DATA_DIR / "incident_count.txt"
+        if not count_path.exists():
+            incident_count = 0
+        else:
+            incident_count = int(count_path.read_text())
 
-    def load_count(self) -> int:
-        """Load the reported AI incidents count from disk."""
-        data_path = Path("data/incident_count.txt")
-        if not data_path.exists():
-            return 0
-        return int(data_path.read_text())
+        # Load artist stats
+        stats_path = DATA_DIR / "artist_stats.json"
+        if not stats_path.exists():
+            artist_stats: artist_stats_dictT = {}
+        else:
+            try:
+                artist_stats = json.loads(stats_path.read_text())
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse artist_stats.json, returning empty dict")
+                artist_stats = {}
+
+        return incident_count, artist_stats
+
+    def store(self) -> None:
+        """Store both incident count and artist statistics to disk."""
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Store incident count
+        count_path = DATA_DIR / "incident_count.txt"
+        count_path.write_text(str(self.reported_ai_incidents))
+
+        # Store artist stats
+        stats_path = DATA_DIR / "artist_stats.json"
+        stats_path.write_text(json.dumps(self.artist_stats, indent=2))
 
     def fetch_ai_music_list(self) -> ai_music_dict_listT | None:
         """Fetch the AI music artist list from the remote API."""
@@ -107,6 +133,15 @@ class SpotifyWatcher(commands.Cog):
             account_id = self.ai_account_names[account_name]
             report_url = SOUL_OVER_AI_ARTIST_BASE_URL.format(account_id)
 
+            # Update artist statistics
+            current_time = dt.datetime.now(dt.timezone.utc).isoformat()
+            if account_name not in self.artist_stats:
+                self.artist_stats[account_name] = {
+                    "first detect": current_time,
+                    "total detects": 0
+                }
+            self.artist_stats[account_name]["total detects"] += 1
+
             if listener in self.last_user_sent_account and self.last_user_sent_account[listener] == account_name:
                 continue
 
@@ -136,8 +171,7 @@ class SpotifyWatcher(commands.Cog):
         self.reported_ai_incidents += new_incidents
         logger.info(f"Reported {new_incidents} new incidents to users, total reported incidents: {self.reported_ai_incidents}")
         
-        
-        self.store_count()
+        self.store()
 
         # Set bot activity to "reported {n} incidents to users"
         await self.bot.change_presence(
