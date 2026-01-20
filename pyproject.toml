@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "discord_bot"
+name = "discord_spotify_ai_detect"
 dynamic = ["version", "dependencies"]
 description = "A discord bot template"
 readme = "README.md"
-requires-python = ">=3.8,<4"
-license = { text = "GPL-3.0" }
+requires-python = ">=3.11,<4"
+license = { text = "MIT" }
 authors = [
     { name = "nonchris", email = "info@nonchris.eu" }
 ]
@@ -27,9 +27,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nonchris/discord-bot"
-"Bug Reports" = "https://github.com/nonchris/discord-bot/issues"
-Source = "https://github.com/nonchris/discord-bot"
+Homepage = "https://github.com/nonchris/discord-spotify-ai-detect"
+"Bug Reports" = "https://github.com/nonchris/discord-spotify-ai-detect/issues"
+Source = "https://github.com/nonchris/discord-spotify-ai-detect"
 
 [project.scripts]
 discord-bot = "discord_bot:main"
