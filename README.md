@@ -1,100 +1,81 @@
-# discord-bot-template
-Generic, functional bot based on discord.py V2.
-Including:
-- general bot setup, saving your time
-  - overwritten behaviour in `on_ready()`, `setup_hook()` and `on_guild_join()`
-  - cog-structure
+# Discord Spotify AI Detect
 
-- commands
-  - ping-commands for slash- and chat-usage as demonstration
-  - a custom help command for old-style chat-command as examples
-  - old-style reacts to prefix and mention
+A Discord bot that monitors members' Spotify activity and notifies them via DM when they're listening to artists listed on [souloverai.com](https://souloverai.com) as potential AI-generated music artists.
 
-- logging setup for console and file
-- utils for easy embed creation, id-extraction and more
-- easy to use external configuration using json or env-variables
-- overall project structure for easy packaging and deployment
+## What it does
 
-This template is aimed at beginners ([how to start](#I'm-new-to-bots---where-to-start?)) for learning purposes and
-advanced users for
-saving time.
+- Watches all guilds it's on for member Spotify listening activity
+- Checks artists against the [Soul Over AI](https://souloverai.com/) database
+- Sends DMs to notify users about potential AI artists
+- Updates the AI music catalogue regularly
+- Tracks total incidents reported (only a number)
+- When each artist was detected for teh first time and how often it was detected over all
 
+There is **no logging of listening data** beside logging failed message delivery attempts if an AI artist was detected and the message couldn't be delivered.
+In this case your username + id and the artist you were listening to are logged (with a timestamp).
+
+**Note:** This bot is not affiliated with the Soul Over AI project. It's a community tool that uses their public database.
 
 ## Setup
 
-###### Setup a [venv](https://docs.python.org/3/library/venv.html) (optional, but recommend)
+1. Create a virtual environment (optional but recommended):
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-
-##### Using pip to install and run the bot as (editable) package:
-```bash
-python3 -m pip install -e .
-export TOKEN="your-token"
-discord-bot
-```
-Note: `-e` is meant only for development. Do not use it for deployment!
-
-##### Or run the bot directly:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
-export TOKEN="your-token"
-python3 src/discord_bot/__init__.py
 ```
 
-
-### Intents
-The bot uses all intents by default, those are required for such simple things like 'display member-count at startup'.
-You need to enable those intents in the [discord developers portal](https://discord.com/developers/applications)
-under `*YourApplication*/Bot/Privileged Gateway Intents`.
-It's possible reconfigure the requested intents in `main.py` if you don't need them.
-But I'd suggest using them all for the beginning, especially if you're relatively new to discord.py.
-This will only be an issue if your bot reaches more than 100 servers, then you've got to apply for those intents.
-
-#### Optional env variables
-| parameter |  description |
-| ------ |  ------ |
-| `PREFIX="b!"`  | Command prefix |
-| `OWNER_NAME="unknwon"` | Name of the bot owner |
-| `OWNER_ID="100000000000000000"` | ID of the bot owner |
-| `ACTIVITY_NAME=f"{PREFIX}help"`| Activity bot plays |
-
-The shown values are the default values that will be loaded if nothing else is specified.
-Expressions like `{PREFIX}` will be replaced by during loading the variable and can be used in specified env variables.
-
-Set those variables using env-variables (suggested):
-`export PREFIX="b!"`
-Or use a json-file expected at: `./data/config.json` like:
-```json
-{
-  "TOKEN": "[your-token]",
-  "PREFIX": "b!"
-}
+3. Set your Discord bot token:
+```bash
+export TOKEN="your-discord-bot-token"
 ```
 
-_If a variable is set using env and json **the environment-variable replaces the json**!_
+4. Run the bot:
+```bash
+python3 -m discord_bot
+```
+
+Or install as an editable package:
+```bash
+python3 -m pip install -e .
+discord-bot
+```
+
+## Configuration
+
+Required environment variables:
+- `TOKEN` - Your Discord bot token
+
+Optional environment variables:
+- `PREFIX` - Command prefix (default: `"b!"`)
+- `ACTIVITY_NAME` - Bot activity status (default: `"{PREFIX}help"`)
+
+## Intents
+
+The bot requires privileged gateway intents (Member Intents) to monitor Spotify activity. Enable them in the [Discord Developer Portal](https://discord.com/developers/applications) under your application's Bot settings.
+
+## Commands
+
+- `/about` - Display information about the bot
+
+## License
+
+This bot aims to operate under the licensing terms of [Soul Over AI](https://github.com/xoundbyte/soul-over-ai/blob/main/LICENSE.md).
+
+The bot itself is licensed under MIT.
+
+## AI Disclosure
+I used AI to accelerate parts of the development process.
+Everything in this Repo was audited by myself, I only accept (AI) changes manually.
+
+I know, it's funny that a tool against AI music written with the aid of AI.
+
+But I don't feel about code the same way I feel about music, which is strange, especially because code affects me even more... do with this standpount whatever you think.
+
+I'm happy if you use my bot/ tool, but I can (somewhat) understand if it's a dealbreaker for you. No hard feelings!
 
 
-# I'm new to bots - where to start?
-Have a look at `src/discord_bot/cogs/misc.py` this is a good place to start with your first smaller functions.
-You'll find some basic examples there.
-Try to modify the `ping`-command or start with a small listener (`on_message`) that responds to each message the bot receives.
-Or write a slash command that sends the date the [member joined the server](https://discordpy.readthedocs.io/en/latest/api.html?highlight=joined#discord.Member.joined_at).
-
-You can expand to yor own, new modules when you feel ready for it :)
-The official docs for discord.py are [here](https://discordpy.readthedocs.io/en/latest/api.html?highlight=guild#api-reference).
-There are also very well documented [examples in the official repository](https://github.com/Rapptz/discord.py/tree/master/examples).
-
-### about
-This repository contains code that was written by me across various bot-projects, like:
-https://github.com/nonchris/discord-fury
-https://github.com/nonchris/quiz-bot
-https://github.com/Info-Bonn/verification-listener
-https://github.com/nonchris/discord-role-selection/tree/main/src/bot
-
-I collected the most useful and generic functions to save me some time when starting the next bot-project.
-
-### documentation
-In order to render this documentation, just call `doxygen`
