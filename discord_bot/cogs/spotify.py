@@ -49,7 +49,9 @@ class SpotifyWatcher(commands.Cog):
         self.fetch_ai_music_list_task.start()
         self.watch_members_task.start()
 
-        self.last_user_sent_account: dict[discord.Member, str] = {}
+        # we use the user id to not enter a user multiple times,
+        #  if they're member on multiple servers (different member objects, but same id)
+        self.last_user_sent_account: dict[int, str] = {}
 
     def load(self) -> tuple[int, artist_stats_dictT]:
         """Load both incident count and artist statistics from disk."""
@@ -145,7 +147,7 @@ class SpotifyWatcher(commands.Cog):
                 }
             self.artist_stats[account_name]["total detects"] += 1
 
-            if listener in self.last_user_sent_account and self.last_user_sent_account[listener] == account_name:
+            if listener.id in self.last_user_sent_account and self.last_user_sent_account[listener.id] == account_name:
                 continue
 
             msg = (
@@ -161,7 +163,7 @@ class SpotifyWatcher(commands.Cog):
                 )
 
             try:
-                self.last_user_sent_account[listener] = account_name
+                self.last_user_sent_account[listener.id] = account_name
                 await ut.send_embed(listener, emb)
             
             # why this: because send_embed expects a ctx-object but itÄs first attempt can handle a user.
@@ -205,6 +207,7 @@ class SpotifyWatcher(commands.Cog):
             "It aims to operate under the licensing terms of soul over ai (https://github.com/xoundbyte/soul-over-ai/blob/main/LICENSE.md)",
             footer=DISCLAIMER
         ))
+
 
 async def setup(bot: commands.Bot) -> None:
     """Setup function to add the SpotifyWatcher cog to the bot."""
