@@ -74,7 +74,7 @@ Everything in this Repo was audited by myself, I only accept (AI) changes manual
 
 I know, it's funny that a tool against AI music written with the aid of AI.
 
-But I don't feel about code the same way I feel about music, which is strange, especially because code affects me even more... do with this standpount whatever you think.
+But I don't feel about code the same way I feel about music, which is strange, especially because code affects me even more... do with this standpoint whatever you think.
 
 I'm happy if you use my bot/ tool, but I can (somewhat) understand if it's a dealbreaker for you. No hard feelings!
 
