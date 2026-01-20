@@ -1,0 +1,19 @@
+---
+version: "3"
+services:
+  role-selection:
+    build: .
+    container_name: discord-ai-detect
+    volumes:
+      - "./data/:/app/data:rw"
+    environment:
+      - UID=1000
+      - GID=1000
+      - TOKEN=${TOKEN}
+      - PREFIX=b!
+      - VERSION=v1.0.0
+      - OWNER_NAME=nonchris
+      - ACTIVITY_NAME="Just started~"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
