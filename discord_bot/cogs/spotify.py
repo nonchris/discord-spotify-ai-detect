@@ -1,3 +1,4 @@
+import atexit
 import datetime as dt
 import json
 from pathlib import Path
@@ -42,6 +43,8 @@ class SpotifyWatcher(commands.Cog):
         self.update_ai_music_catalogue()
 
         self.reported_ai_incidents, self.artist_stats = self.load()
+
+        atexit.register(self.store)
 
         self.fetch_ai_music_list_task.start()
         self.watch_members_task.start()
