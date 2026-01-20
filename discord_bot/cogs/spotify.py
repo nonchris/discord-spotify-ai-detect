@@ -197,7 +197,7 @@ class SpotifyWatcher(commands.Cog):
             value="I will tell you via DM when you listen to an artist that is listed on https://souloverai.com as AI music artist.\n\n"
             "You can report an artist as AI music artist at https://souloverai.com/add artist command.\n\n"
             "I don't log your listening history, the only thing logged is when I attempt to notify you about an artist beeing potentiall AI and I can't send you a DM. "
-            "In this case your user-name, your discord-id and the artist you listend to is logged.\n\n"
+            "In this case your user-name, your discord-id and the artist you listend to is logged with a timestamp.\n\n"
             "Please note the this bot is **not affiliated** with the soul over ai project, it is maintained by Chris (https://github.com/nonchris/discord-spotify-ai-detect)\n\n"
             "It aims to operate under the licensing terms of soul over ai (https://github.com/xoundbyte/soul-over-ai/blob/main/LICENSE.md)",
             footer=DISCLAIMER
