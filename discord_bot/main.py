@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 from discord_bot.environment import ACTIVITY_NAME
+from discord_bot.environment import OWNER_ID
 from discord_bot.environment import PREFIX
 from discord_bot.environment import TOKEN
 
@@ -132,6 +133,9 @@ bot = MyBot()
 @bot.command(name="r")
 async def reload_extension_command(ctx: commands.Context):
     """Reload all extensions in self.initial_extensions."""
+    if not ctx.author.id != OWNER_ID:
+        return
+
     results = []
     for extension in bot.initial_extensions:
         try:
