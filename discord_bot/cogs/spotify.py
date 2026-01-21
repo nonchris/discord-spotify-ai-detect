@@ -1,13 +1,12 @@
 import atexit
 import datetime as dt
 import json
-from pathlib import Path
 
 import discord
+import requests
 from discord import app_commands
 from discord.ext import commands
 from discord.ext import tasks
-import requests
 
 from ..environment import DATA_DIR
 from ..log_setup import logger
@@ -93,7 +92,7 @@ class SpotifyWatcher(commands.Cog):
         if r.status_code != 200:
             logger.warning(f"Failed to fetch AI music list: {r.status_code}")
             return None
-        
+
         content = r.json()
         return content
 
@@ -141,10 +140,7 @@ class SpotifyWatcher(commands.Cog):
             # Update artist statistics
             current_time = dt.datetime.now(dt.timezone.utc).isoformat()
             if account_name not in self.artist_stats:
-                self.artist_stats[account_name] = {
-                    "first detect": current_time,
-                    "total detects": 0
-                }
+                self.artist_stats[account_name] = {"first detect": current_time, "total detects": 0}
             self.artist_stats[account_name]["total detects"] += 1
 
             if listener.id in self.last_user_sent_account and self.last_user_sent_account[listener.id] == account_name:
@@ -155,27 +151,29 @@ class SpotifyWatcher(commands.Cog):
                 f"You can find out more at: {report_url}"
             )
             emb = ut.make_embed(
-                title="Potential AI Artist detected!", 
+                title="Potential AI Artist detected!",
                 color=ut.red,
                 name=f"{account_name} is on the Soul Over AI index",
                 value=msg,
-                footer=DISCLAIMER
-                )
+                footer=DISCLAIMER,
+            )
 
             try:
                 self.last_user_sent_account[listener.id] = account_name
                 await ut.send_embed(listener, emb)
-            
+
             # why this: because send_embed expects a ctx-object but itÄs first attempt can handle a user.
             # the error handling will fail , but I'm ignoring this for now
             except AttributeError:
                 logger.info(f"Failed to message {listener.display_name} ({listener.id}), about {report_url}")
 
             new_incidents += 1
-        
+
         self.reported_ai_incidents += new_incidents
-        logger.info(f"Reported {new_incidents} new incidents to users, total reported incidents: {self.reported_ai_incidents}")
-        
+        logger.info(
+            f"Reported {new_incidents} new incidents to users, total reported incidents: {self.reported_ai_incidents}"
+        )
+
         self.store()
 
         # Set bot activity to "reported {n} incidents to users"
@@ -184,7 +182,7 @@ class SpotifyWatcher(commands.Cog):
                 type=discord.ActivityType.watching,
                 name=f"Reported {self.reported_ai_incidents} incidents to users",
             )
-            )
+        )
 
     @tasks.loop(seconds=3600)
     async def fetch_ai_music_list_task(self) -> None:
@@ -195,18 +193,20 @@ class SpotifyWatcher(commands.Cog):
     @app_commands.command(name="about", description="Get the list of AI music artists")
     async def about_command(self, interaction: discord.Interaction) -> None:
         """Display information about the AI music watcher bot."""
-        await interaction.response.send_message(embed=ut.make_embed(
-            title="AI Music Watcher",
-            color=ut.blue_light,
-            name="Telling you when you listen to AI music",
-            value="I will tell you via DM when you listen to an artist that is listed on https://souloverai.com as AI music artist.\n\n"
-            "You can report an artist as AI music artist at https://souloverai.com/add artist command.\n\n"
-            "I don't log your listening history, the only thing logged is when I attempt to notify you about an artist beeing potentiall AI and I can't send you a DM. "
-            "In this case your user-name, your discord-id and the artist you listend to is logged with a timestamp.\n\n"
-            "Please note the this bot is **not affiliated** with the soul over ai project, it is maintained by Chris (https://github.com/nonchris/discord-spotify-ai-detect)\n\n"
-            "It aims to operate under the licensing terms of soul over ai (https://github.com/xoundbyte/soul-over-ai/blob/main/LICENSE.md)",
-            footer=DISCLAIMER
-        ))
+        await interaction.response.send_message(
+            embed=ut.make_embed(
+                title="AI Music Watcher",
+                color=ut.blue_light,
+                name="Telling you when you listen to AI music",
+                value="I will tell you via DM when you listen to an artist that is listed on https://souloverai.com as AI music artist.\n\n"
+                "You can report an artist as AI music artist at https://souloverai.com/add artist command.\n\n"
+                "I don't log your listening history, the only thing logged is when I attempt to notify you about an artist beeing potentiall AI and I can't send you a DM. "
+                "In this case your user-name, your discord-id and the artist you listend to is logged with a timestamp.\n\n"
+                "Please note the this bot is **not affiliated** with the soul over ai project, it is maintained by Chris (https://github.com/nonchris/discord-spotify-ai-detect)\n\n"
+                "It aims to operate under the licensing terms of soul over ai (https://github.com/xoundbyte/soul-over-ai/blob/main/LICENSE.md)",
+                footer=DISCLAIMER,
+            )
+        )
 
 
 async def setup(bot: commands.Bot) -> None:
