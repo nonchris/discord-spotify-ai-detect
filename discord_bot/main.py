@@ -3,7 +3,6 @@
 import discord
 from discord.ext import commands
 
-from discord_bot.environment import ACTIVITY_NAME
 from discord_bot.environment import OWNER_ID
 from discord_bot.environment import PREFIX
 from discord_bot.environment import TOKEN
@@ -77,9 +76,6 @@ class MyBot(commands.Bot):
             f"Bot '{self.user.name}' has connected, active on {len(self.guilds)} guilds:\n{guild_string}"
             f"---\n"
         )
-
-        # set the status of the bot
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=ACTIVITY_NAME))
 
     async def on_guild_join(self, guild: discord.Guild):
         """!
