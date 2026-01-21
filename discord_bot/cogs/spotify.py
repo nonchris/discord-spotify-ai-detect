@@ -125,7 +125,7 @@ class SpotifyWatcher(commands.Cog):
     @tasks.loop(seconds=10)
     async def watch_members_task(self) -> None:
         """Task that watches members' Spotify activity and notifies them about AI artists."""
-        logger.info("Running task to watch members for AI music")
+        logger.debug("Running task to watch members for AI music")
         listeners = self.current_listeners()
 
         new_incidents = 0
@@ -169,6 +169,9 @@ class SpotifyWatcher(commands.Cog):
 
             new_incidents += 1
 
+        if not new_incidents:
+            return
+
         self.reported_ai_incidents += new_incidents
         logger.info(
             f"Reported {new_incidents} new incidents to users, total reported incidents: {self.reported_ai_incidents}"
@@ -176,12 +179,16 @@ class SpotifyWatcher(commands.Cog):
 
         self.store()
 
+        await self.change_presence()
+
+    async def change_presence(self):
         # Set bot activity to "reported {n} incidents to users"
         await self.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
-                name=f"Reported {self.reported_ai_incidents} incidents to users",
-            )
+                name=f"Reported {self.reported_ai_incidents} incidents. {len(self.ai_account_names)} AI accounts in database",
+            ),
+            status=discord.Status.do_not_disturb,
         )
 
     @tasks.loop(seconds=3600)
@@ -189,6 +196,7 @@ class SpotifyWatcher(commands.Cog):
         """Task that periodically updates the AI music catalogue."""
         logger.info("Running task to update AI music catalogue")
         self.update_ai_music_catalogue()
+        await self.change_presence()
 
     @app_commands.command(name="about", description="Get the list of AI music artists")
     async def about_command(self, interaction: discord.Interaction) -> None:
