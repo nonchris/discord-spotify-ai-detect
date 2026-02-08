@@ -1,5 +1,7 @@
 # Discord Spotify AI Detect
-[![Discord](https://discord.com/api/guilds/1462983163562299515/embed.png)](https://discord.gg/y5BM4NaNgM)
+
+[![Discord](https://img.shields.io/discord/1462983163562299515?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/y5BM4NaNgM)
+
 
 
 A Discord bot that monitors members' Spotify activity and notifies them via DM when they're listening to artists listed on [souloverai.com](https://souloverai.com) as potential AI-generated music artists.
