@@ -1,6 +1,6 @@
 # Discord Spotify AI Detect
 
-[![Discord](https://img.shields.io/discord/1462983163562299515?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/y5BM4NaNgM)
+[![Discord](https://img.shields.io/discord/1462983163562299515?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.com/invite/fYXsRynx)
 
 
 
