@@ -4,6 +4,8 @@ import json
 
 import discord
 import requests
+from discord import Member
+from discord import Spotify
 from discord import app_commands
 from discord.ext import commands
 from discord.ext import tasks
@@ -46,7 +48,6 @@ class SpotifyWatcher(commands.Cog):
         atexit.register(self.store)
 
         self.fetch_ai_music_list_task.start()
-        self.watch_members_task.start()
 
         # we use the user id to not enter a user multiple times,
         #  if they're member on multiple servers (different member objects, but same id)
@@ -110,76 +111,47 @@ class SpotifyWatcher(commands.Cog):
         self.ai_account_data_full = content
         self.ai_account_names = self._extract_account_names(content)
 
-    def current_listeners(self) -> list[tuple[discord.Member, discord.Spotify]]:
-        """Get all members currently listening to Spotify across all guilds."""
-        listeners: list[discord.Member] = []
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                if not member.activities:
-                    continue
-                for activity in member.activities:
-                    if activity.type == discord.ActivityType.listening and activity.name == "Spotify":
-                        listeners.append((member, activity))
-        return listeners
+    async def notify_member(self, listener: Member, spotify_state: Spotify):
+        """method to be called when a member shall be notified for listening to AI"""
 
-    @tasks.loop(seconds=10)
-    async def watch_members_task(self) -> None:
-        """Task that watches members' Spotify activity and notifies them about AI artists."""
-        logger.debug("Running task to watch members for AI music")
-        listeners = self.current_listeners()
-
-        new_incidents = 0
-        for listener, spotify_state in listeners:
-            if spotify_state.artist not in self.ai_account_names:
-                continue
-
-            account_name = spotify_state.artist
-            account_id = self.ai_account_names[account_name]
-            report_url = SOUL_OVER_AI_ARTIST_BASE_URL.format(account_id)
-
-            # Update artist statistics
-            current_time = dt.datetime.now(dt.timezone.utc).isoformat()
-            if account_name not in self.artist_stats:
-                self.artist_stats[account_name] = {"first detect": current_time, "total detects": 0}
-            self.artist_stats[account_name]["total detects"] += 1
-
-            if listener.id in self.last_user_sent_account and self.last_user_sent_account[listener.id] == account_name:
-                continue
-
-            msg = (
-                "The artist you're currently listening to is listed on https://souloverai.com\n"
-                f"You can find out more at: {report_url}"
-            )
-            emb = ut.make_embed(
-                title="Potential AI Artist detected!",
-                color=ut.red,
-                name=f"{account_name} is on the Soul Over AI index",
-                value=msg,
-                footer=DISCLAIMER,
-            )
-
-            try:
-                self.last_user_sent_account[listener.id] = account_name
-                await ut.send_embed(listener, emb)
-
-            # why this: because send_embed expects a ctx-object but itÄs first attempt can handle a user.
-            # the error handling will fail , but I'm ignoring this for now
-            except AttributeError:
-                logger.info(f"Failed to message {listener.display_name} ({listener.id}), about {report_url}")
-
-            new_incidents += 1
-
-        if not new_incidents:
+        # we don't wanna spam users
+        #  so as long as a user keeps listening to the same single AI account we only send once
+        if (
+            listener.id in self.last_user_sent_account
+            and self.last_user_sent_account[listener.id] == spotify_state.artist
+        ):
             return
 
-        self.reported_ai_incidents += new_incidents
-        logger.info(
-            f"Reported {new_incidents} new incidents to users, total reported incidents: {self.reported_ai_incidents}"
+        account_name = spotify_state.artist
+        account_id = self.ai_account_names[account_name]
+        report_url = SOUL_OVER_AI_ARTIST_BASE_URL.format(account_id)
+
+        # Update artist statistics
+        current_time = dt.datetime.now(dt.timezone.utc).isoformat()
+        if account_name not in self.artist_stats:
+            self.artist_stats[account_name] = {"first detect": current_time, "total detects": 0}
+        self.artist_stats[account_name]["total detects"] += 1
+
+        msg = (
+            "The artist you're currently listening to is listed on https://souloverai.com\n"
+            f"You can find out more at: {report_url}"
+        )
+        emb = ut.make_embed(
+            title="Potential AI Artist detected!",
+            color=ut.red,
+            name=f"{account_name} is on the Soul Over AI index",
+            value=msg,
+            footer=DISCLAIMER,
         )
 
-        self.store()
+        try:
+            self.last_user_sent_account[listener.id] = account_name
+            await ut.send_embed(listener, emb)
 
-        await self.change_presence()
+        # why this: because send_embed expects a ctx-object but itÄs first attempt can handle a user.
+        # the error handling will fail , but I'm ignoring this for now
+        except AttributeError:
+            logger.info(f"Failed to message {listener.display_name} ({listener.id}), about {report_url}")
 
     async def change_presence(self):
         # Set bot activity to "reported {n} incidents to users"
@@ -190,6 +162,35 @@ class SpotifyWatcher(commands.Cog):
             ),
             status=discord.Status.do_not_disturb,
         )
+
+    @commands.Cog.listener()
+    async def on_raw_presence_update(self, payload: discord.RawPresenceUpdateEvent):
+        """triggered if presence of a member changes"""
+        spotify_objects = [a for a in payload.activities if isinstance(a, discord.Spotify)]
+        if not spotify_objects:
+            return
+
+        # there should be only one spotify status possible per member
+        # but this smh isn't guaranteed, so doing a loop is more robust
+        if len(spotify_objects) > 1:
+            logger.info(f"Captured a member having MULTIPLE spotify activities at once. HOW?! {spotify_objects}")
+
+        for spotify_state in spotify_objects:
+
+            # nothing to do here
+            if spotify_state.artist not in self.ai_account_names:
+                continue
+
+            # fetch latest state of user because they might not be in the caches
+            listener: discord.Member = await self.bot.get_guild(payload.guild_id).fetch_member(payload.user_id)
+
+            await self.notify_member(listener, spotify_state)
+
+            self.reported_ai_incidents += 1
+            logger.info(f"Reported new incident to user, new total reported incidents: {self.reported_ai_incidents}")
+
+        self.store()
+        await self.change_presence()
 
     @tasks.loop(seconds=3600)
     async def fetch_ai_music_list_task(self) -> None:
